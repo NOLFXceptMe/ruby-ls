@@ -3,6 +3,7 @@
 # ls [-a] [file...]
 
 require 'etc'
+require './mode'
 
 options = ARGV.select {|arg| arg.start_with?('-')}
 files = ARGV.select {|arg| !arg.start_with?('-')}
@@ -21,10 +22,6 @@ def filter_folder(file, opts)
   else
     [file]
   end
-end
-
-def format_mode(mode)
-  mode
 end
 
 def get_user(uid)
@@ -46,7 +43,7 @@ end
 def long_list(file)
   stat = File.stat(file)
 
-  "%s %s %s %s %d %s %s\n" %
+  "\%s %s %s %s %d %s %s\n" %
     [format_mode(stat.mode),
      stat.nlink,
      get_user(stat.uid),
