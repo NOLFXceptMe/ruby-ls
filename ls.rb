@@ -3,10 +3,8 @@
 # ls [-a] [file...]
 
 require 'etc'
+require "./folder"
 require './mode'
-
-options = ARGV.select {|arg| arg.start_with?('-')}
-files = ARGV.select {|arg| !arg.start_with?('-')}
 
 def filter_folder(file, opts)
   if !File.exist? file
@@ -16,11 +14,13 @@ def filter_folder(file, opts)
   end
 
   if File.directory? file
-    Dir.entries(file)
+    Folder.new(
+      file,
+      Dir.entries(file)
         .select {|filename| !filename.start_with?(".") || opts.include?('-a')}
-        .map {|filename| File.join(file, filename)}
+        .map {|filename| File.join(file, filename)})
   else
-    [file]
+    Folder.new(file, [])
   end
 end
 
@@ -43,7 +43,7 @@ end
 def long_list(file)
   stat = File.stat(file)
 
-  "\%s %s %s %s %d %s %s\n" %
+  "%s %s %s %s %d %s %s" %
     [format_mode(stat.mode),
      stat.nlink,
      get_user(stat.uid),
@@ -55,13 +55,31 @@ end
 
 def format_file(file, opts)
   if opts.include?('-l')
-    long_list(file)
+    long_list file
   else
-    file
+    "%s\t" %  File.basename(file)
   end
 end
 
-(files.empty? ? ["."] : files)
-    .flat_map {|file| filter_folder(file, options)}
-    .map {|file| format_file(file, options)}
-    .each {|filename| puts filename}
+def format_folder(folder, opts, showfolder)
+  join_str = opts.include?('-l') ? "\n" : ""
+
+  "%s%s" % [
+    showfolder ? "%s:\n" %folder.name : '',
+
+    folder.contents
+      .sort
+      .map {|file| format_file(file, opts)}
+      .join(join_str)
+  ]
+end
+
+options = ARGV.select {|arg| arg.start_with?('-')}
+folders = ARGV.select {|arg| !arg.start_with?('-')}
+
+puts "%s" %
+  (folders.empty? ? ["."] : folders)
+    .sort
+    .map {|folder| filter_folder(folder, options)}
+    .map {|folder| format_folder(folder, options, folders.size > 1)}
+    .join("\n\n")
