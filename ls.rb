@@ -21,7 +21,7 @@ class Ls
       (@files.empty? ? ["."] : @files)
         .sort
         .map {|folder| filter_folder(folder)}
-        .map {|folder| format_folder(folder, multi_folder?)}
+        .map {|folder| format_folder(folder)}
         .join("\n\n")
   end
 
@@ -59,11 +59,11 @@ class Ls
     end
   end
 
-  def format_folder(folder, showfolder)
+  def format_folder(folder)
     join_str = long_list? ? "\n" : ""
 
     "%s%s" % [
-      showfolder ? "%s:\n" %folder.name : '',
+      multi_folder? ? "%s:\n" %folder.name : '',
 
       folder.contents
         .sort
