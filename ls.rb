@@ -6,72 +6,108 @@ require 'etc'
 require "./folder"
 require './mode'
 
-def filter_folder(file, opts)
-  if !File.exist? file
-    STDERR.puts "cannot access '#{file}': No such file or directory"
-    # /bin/ls returns 2 on exit
-    exit 2
+class Ls
+
+  # Constructor
+  def initialize(opts, files)
+    @opts = opts
+    @files = files
   end
 
-  if File.directory? file
-    Folder.new(
-      file,
-      Dir.entries(file)
-        .select {|filename| !filename.start_with?(".") || opts.include?('a')}
-        .map {|filename| File.join(file, filename)})
-  else
-    Folder.new(file, [])
+  # ToString
+  @override
+  def to_s
+      (@files.empty? ? ["."] : @files)
+        .sort
+        .map {|folder| filter_folder(folder)}
+        .map {|folder| format_folder(folder, multi_folder?)}
+        .join("\n\n")
   end
-end
 
-def get_user(uid)
-  Etc.getpwuid(uid).name
-end
+  private
 
-def get_group(gid)
-  Etc.getgrgid(gid).name
-end
-
-def format_mtime(mtime)
-  if(mtime > (Time.now - 6 * 30 * 24 * 60 * 60))
-    mtime.strftime "%b %e %H:%M"
-  else
-    mtime.strftime "%b %e %Y"
+  # Member functions
+  def long_list?
+    @opts.include?("l")
   end
-end
 
-def long_list(file)
-  stat = File.stat(file)
-
-  "%s %s %s %s %d %s %s" %
-    [format_mode(stat.mode),
-     stat.nlink,
-     get_user(stat.uid),
-     get_group(stat.gid),
-     stat.size,
-     format_mtime(stat.mtime),
-     File.basename(file)]
-end
-
-def format_file(file, opts)
-  if opts.include?('l')
-    long_list file
-  else
-    "%s\t" %  File.basename(file)
+  def show_hidden?
+    @opts.include?("a")
   end
-end
 
-def format_folder(folder, opts, showfolder)
-  join_str = opts.include?('l') ? "\n" : ""
+  def multi_folder?
+    @files.size > 1
+  end
 
-  "%s%s" % [
-    showfolder ? "%s:\n" %folder.name : '',
+  # Utility functions
+  def get_user(uid)
+    Etc.getpwuid(uid).name
+  end
 
-    folder.contents
-      .sort
-      .map {|file| format_file(file, opts)}
-      .join(join_str)
-  ]
+  def get_group(gid)
+    Etc.getgrgid(gid).name
+  end
+
+  def format_mtime(mtime)
+    if(mtime > (Time.now - 6 * 30 * 24 * 60 * 60))
+      mtime.strftime "%b %e %H:%M"
+    else
+      mtime.strftime "%b %e %Y"
+    end
+  end
+
+  def long_list(file)
+    stat = File.stat(file)
+
+    "%s %s %s %s %d %s %s" %
+      [format_mode(stat.mode),
+       stat.nlink,
+       get_user(stat.uid),
+       get_group(stat.gid),
+       stat.size,
+       format_mtime(stat.mtime),
+       File.basename(file)]
+  end
+
+  def filter_folder(file)
+    if !File.exist? file
+      STDERR.puts "cannot access '#{file}': No such file or directory"
+      # /bin/ls returns 2 on exit
+      exit 2
+    end
+
+    if File.directory? file
+      Folder.new(
+        file,
+        Dir.entries(file)
+          .select {|filename| !filename.start_with?(".") || show_hidden? }
+          .map {|filename| File.join(file, filename)})
+    else
+      Folder.new(file, [])
+    end
+  end
+
+  def format_folder(folder, showfolder)
+    join_str = long_list? ? "\n" : ""
+
+    "%s%s" % [
+      showfolder ? "%s:\n" %folder.name : '',
+
+      folder.contents
+        .sort
+        .map {|file| format_file(file)}
+        .join(join_str)
+    ]
+  end
+
+  def format_file(file)
+    if long_list?
+      long_list file
+    else
+      "%s\t" %  File.basename(file)
+    end
+  end
+
 end
 
 def get_options(argv)
@@ -83,12 +119,4 @@ def get_folders(argv)
   argv.select {|arg| !arg.start_with?('-')}
 end
 
-options = get_options(ARGV)
-folders = get_folders(ARGV)
-
-puts "%s" %
-  (folders.empty? ? ["."] : folders)
-    .sort
-    .map {|folder| filter_folder(folder, options)}
-    .map {|folder| format_folder(folder, options, folders.size > 1)}
-    .join("\n\n")
+puts "%s" % Ls.new(get_options(ARGV), get_folders(ARGV))
