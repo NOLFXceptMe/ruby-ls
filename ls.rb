@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 #
-# ls [-a] [file...]
+# ls [-al] [file...]
 
 require 'etc'
 require "./folder"
@@ -17,7 +17,7 @@ def filter_folder(file, opts)
     Folder.new(
       file,
       Dir.entries(file)
-        .select {|filename| !filename.start_with?(".") || opts.include?('-a')}
+        .select {|filename| !filename.start_with?(".") || opts.include?('a')}
         .map {|filename| File.join(file, filename)})
   else
     Folder.new(file, [])
@@ -54,7 +54,7 @@ def long_list(file)
 end
 
 def format_file(file, opts)
-  if opts.include?('-l')
+  if opts.include?('l')
     long_list file
   else
     "%s\t" %  File.basename(file)
@@ -62,7 +62,7 @@ def format_file(file, opts)
 end
 
 def format_folder(folder, opts, showfolder)
-  join_str = opts.include?('-l') ? "\n" : ""
+  join_str = opts.include?('l') ? "\n" : ""
 
   "%s%s" % [
     showfolder ? "%s:\n" %folder.name : '',
@@ -74,8 +74,17 @@ def format_folder(folder, opts, showfolder)
   ]
 end
 
-options = ARGV.select {|arg| arg.start_with?('-')}
-folders = ARGV.select {|arg| !arg.start_with?('-')}
+def get_options(argv)
+  argv.select {|arg| arg.start_with?('-')}
+      .flat_map {|arg| arg[1..-1].chars}
+end
+
+def get_folders(argv)
+  argv.select {|arg| !arg.start_with?('-')}
+end
+
+options = get_options(ARGV)
+folders = get_folders(ARGV)
 
 puts "%s" %
   (folders.empty? ? ["."] : folders)
