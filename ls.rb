@@ -3,7 +3,6 @@
 # ls [-al] [file...]
 
 require 'etc'
-require "./folder"
 require './mode'
 require './util'
 
@@ -21,7 +20,7 @@ class Ls
       (@files.empty? ? ["."] : @files)
         .sort
         .map {|folder| filter_folder(folder)}
-        .map {|folder| format_folder(folder)}
+        .map {|name, contents| format_folder(name, contents)}
         .join("\n\n")
   end
 
@@ -49,23 +48,24 @@ class Ls
     end
 
     if File.directory? file
-      Folder.new(
+      [
         file,
         Dir.entries(file)
           .select {|filename| !filename.start_with?(".") || show_hidden? }
-          .map {|filename| File.join(file, filename)})
+          .map {|filename| File.join(file, filename)}
+      ]
     else
-      Folder.new(file, [])
+      [file, []]
     end
   end
 
-  def format_folder(folder)
+  def format_folder(name, contents)
     join_str = long_list? ? "\n" : ""
 
     "%s%s" % [
-      multi_folder? ? "%s:\n" %folder.name : '',
+      multi_folder? ? "%s:\n" %name : '',
 
-      folder.contents
+      contents
         .sort
         .map {|file| format_file(file)}
         .join(join_str)
