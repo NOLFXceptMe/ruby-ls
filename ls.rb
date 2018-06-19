@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 #
-# ls [-al] [file...]
+# ls [-Aal] [file...]
 
 require 'etc'
 require './mode'
@@ -32,7 +32,12 @@ class Ls
   end
 
   def show_hidden?
-    @opts.include?("a")
+    @opts.include?("a") || show_almost_all?
+  end
+
+  # not exactly POSIX here
+  def show_almost_all?
+    @opts.include?("A")
   end
 
   def multi_folder?
@@ -52,6 +57,7 @@ class Ls
         file,
         Dir.entries(file)
           .select {|filename| !filename.start_with?(".") || show_hidden? }
+          .select {|filename| !(filename.eql?(".") || filename.eql?("..")) || !show_almost_all? }
           .map {|filename| File.join(file, filename)}
       ]
     else
