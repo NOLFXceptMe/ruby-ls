@@ -16,14 +16,16 @@ def format_mtime(mtime)
   end
 end
 
-def long_list(file)
+def long_list(file, show_user = false, show_group = false)
   stat = File.stat(file)
 
-  "%s %s %s %s %d %s %s" %
+  format = "%s %s %s %s %d %s %s"
+
+  format %
     [format_mode(stat.mode),
      stat.nlink,
-     get_user(stat.uid),
-     get_group(stat.gid),
+     show_user ? get_user(stat.uid) : "\0",
+     show_group ? get_group(stat.gid) : "\0",
      stat.size,
      format_mtime(stat.mtime),
      File.basename(file)]

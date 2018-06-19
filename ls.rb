@@ -28,7 +28,15 @@ class Ls
 
   # Member functions
   def long_list?
-    @opts.include?("l")
+    @opts.include?("l") || @opts.include?("g") || @opts.include?("o")
+  end
+
+  def show_group?
+    @opts.include?("l") || @opts.include?('g')
+  end
+
+  def show_user?
+    @opts.include?("l") || @opts.include?('o')
   end
 
   def show_hidden?
@@ -80,7 +88,7 @@ class Ls
 
   def format_file(file)
     if long_list?
-      long_list file
+      long_list file, show_user?, show_group?
     else
       "%s\t" %  File.basename(file)
     end
