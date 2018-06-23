@@ -48,6 +48,18 @@ class Ls
     @opts.include?("A")
   end
 
+  def show_total?
+    @opts.include?("l") ||
+    @opts.include?("g") ||
+    @opts.include?("n") ||
+    @opts.include?("o") ||
+    @opts.include?("s")
+  end
+
+  def show_size?
+    @opts.include?("s")
+  end
+
   def multi_folder?
     @files.size > 1
   end
@@ -74,23 +86,29 @@ class Ls
   end
 
   def format_folder(name, contents)
-    join_str = long_list? ? "\n" : ""
+    join_str = long_list? ? "\n" : "  "
+    stats = contents.map {|file| File::stat(file)}
+    total = stats.map {|stat| stat.blocks}.reduce(:+)
 
-    "%s%s" % [
-      multi_folder? ? "%s:\n" %name : '',
+    "%s%s%s" % [
+      multi_folder? ? "%s:\n" %name : "\0",
 
-      contents
-        .sort_by(&:downcase)
-        .map {|file| format_file(file)}
+      show_total? ? "total %u\n" % total : "\0",
+
+      contents.zip(stats)
+        .sort_by {|file, stat| file.downcase}
+        .map {|file, stat| format_file(file, stat)}
         .join(join_str)
     ]
   end
 
-  def format_file(file)
+  def format_file(file, stat)
     if long_list?
-      long_list file, show_user?, show_group?
+      long_list file, stat, show_user?, show_group?
+    elsif show_size?
+      "%d %s" % [stat.blocks, File.basename(file)]
     else
-      "%s\t" %  File.basename(file)
+      "%s" %  File.basename(file)
     end
   end
 

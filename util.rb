@@ -1,11 +1,17 @@
 #!/usr/bin/env ruby
 
+LS_BLK_SZ = 512     #512 kB
+
 def get_user(uid)
   Etc.getpwuid(uid).name
 end
 
 def get_group(gid)
   Etc.getgrgid(gid).name
+end
+
+def get_blocks(stat)
+  stat.blocks * (stat.blksize / LS_BLK_SZ)
 end
 
 def format_mtime(mtime)
@@ -16,8 +22,7 @@ def format_mtime(mtime)
   end
 end
 
-def long_list(file, show_user = false, show_group = false)
-  stat = File.stat(file)
+def long_list(file, stat, show_user = false, show_group = false)
 
   format = "%s %s %s %s %d %s %s"
 
