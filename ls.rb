@@ -64,6 +64,22 @@ class Ls
     @files.size > 1
   end
 
+  def use_ctime?
+    @opts.include?("c")
+  end
+
+  def reverse_sort?
+    @opts.include?("r")
+  end
+
+  def custom_sort(file, stat)
+    if use_ctime?
+      -stat.ctime.to_i
+    else
+      file.downcase
+    end
+  end
+
   # Other functions
   def filter_folder(file)
     if !File.exist? file
@@ -85,8 +101,20 @@ class Ls
     end
   end
 
-  def format_folder(name, contents)
+  def format_contents(contents)
     join_str = long_list? ? "\n" : "  "
+    list = contents
+              .sort_by {|file, stat| custom_sort(file, stat)}
+              .map {|file, stat| format_file(file, stat)}
+
+    if reverse_sort?
+      list.reverse.join(join_str)
+    else 
+      list.join(join_str)
+    end
+  end
+
+  def format_folder(name, contents)
     stats = contents.map {|file| File::stat(file)}
     total = stats.map {|stat| stat.blocks}.reduce(:+)
 
@@ -95,10 +123,7 @@ class Ls
 
       show_total? ? "total %u\n" % total : "\0",
 
-      contents.zip(stats)
-        .sort_by {|file, stat| file.downcase}
-        .map {|file, stat| format_file(file, stat)}
-        .join(join_str)
+      format_contents(contents.zip(stats))
     ]
   end
 
