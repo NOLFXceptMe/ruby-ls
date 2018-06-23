@@ -18,7 +18,7 @@ class Ls
   @override
   def to_s
       (@files.empty? ? ["."] : @files)
-        .sort
+        .sort_by(&:downcase)
         .map {|folder| filter_folder(folder)}
         .map {|name, contents| format_folder(name, contents)}
         .join("\n\n")
@@ -80,7 +80,7 @@ class Ls
       multi_folder? ? "%s:\n" %name : '',
 
       contents
-        .sort
+        .sort_by(&:downcase)
         .map {|file| format_file(file)}
         .join(join_str)
     ]
